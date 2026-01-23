@@ -215,7 +215,8 @@ with results_container:
                 st.stop()
 
             if response.status_code != 200:
-                st.error("❌ Diagnostic service returned an error.")
+                st.error(f"❌ API error {response.status_code}")
+                st.code(response.text)
                 st.stop()
 
             result = response.json()
@@ -323,3 +324,4 @@ st.caption("""
 
 **4. Resultados Proyectados:** Los cálculos de "Ahorro Estimado" y "Eficiencia" son proyecciones matemáticas basadas en datos históricos y no garantizan rendimientos futuros.
 """)
+
