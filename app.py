@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import os
+import time
 
 API_URL = st.secrets["API_URL"]
 API_KEY = st.secrets["API_KEY"]
@@ -96,9 +97,9 @@ def reset_session():
     st.session_state.archivo_cargado = False
     st.session_state.df_user = None
     st.session_state.columna_pesos = None
-
+    st.session_state.pdf_requested = False 
 # -------------------------------------------------
-# UI – TEXTO PRINCIPAL
+# UI – TEXTO PRINCIPAL timeout
 # -------------------------------------------------
 st.title("🛡️ AOC / AHR: Portal de Auditoría Estructural")
 
@@ -165,7 +166,7 @@ if st.session_state.archivo_cargado and not st.session_state.diagnostico_listo:
         st.rerun()
 
 # -------------------------------------------------
-# RESULTADOS (CONTENEDOR AISLADO 🔒)
+# RESULTADOS (CONTENEDOR AISLADO 🔒) API
 # -------------------------------------------------
 results_container = st.container()
 
@@ -174,6 +175,11 @@ with results_container:
         pesos = st.session_state.columna_pesos
         level = get_exposure_level()
 
+        try:
+            requests.get("https://aoc-diagnostic-api.onrender.com", timeout=90)
+            time.sleep(1)
+        except:
+            pass
         # -----------------------------
         # LLAMADA A LA API
         # -----------------------------
@@ -181,21 +187,35 @@ with results_container:
             st.warning("Usage limit reached for this session.")
             st.stop()
 
-        with st.spinner("Analizando estructura interna..."):
+        with st.spinner("🛡️ Initializing secure diagnostic engine..."):
             files = {"file": uploaded_file}
             headers = {"x-api-key": API_KEY}
             data = {"cost_per_trade": comision}
+            
+            try:
+                response = requests.post(
+                    API_URL,
+                    files=files,
+                    headers=headers,
+                    data=data,
+                    timeout=120
+                )
 
-            response = requests.post(
-                API_URL,
-                files=files,
-                headers=headers,
-                data=data,
-                timeout=30
-            )
+            except requests.exceptions.ReadTimeout:
+                st.warning("""
+                ⏳ Diagnostic engine is warming up.
+
+                This happens only on the **first run**.
+                Please wait ~30–60 seconds and try again.
+                """)
+                st.stop()
+
+            except Exception as e:
+                st.error("❌ Unexpected connection error.")
+                st.stop()
 
             if response.status_code != 200:
-                st.error("❌ Error al ejecutar diagnóstico.")
+                st.error("❌ Diagnostic service returned an error.")
                 st.stop()
 
             result = response.json()
