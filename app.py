@@ -189,17 +189,19 @@ with results_container:
             st.stop()
 
         with st.spinner("🛡️ Initializing secure diagnostic engine..."):
-            current_bytes = st.session_state.file_bytes 
-            files = {"file": ("data.csv", current_bytes, "text/csv")}
+            # Usamos los bytes guardados en el estado
+            files = {"file": ("data.csv", st.session_state.file_bytes, "text/csv")}
             headers = {"x-api-key": API_KEY}
-            payload = {"cost_per_trade": comision} # Cambié 'data' por 'payload' para evitar confusiones
+            
+            # Enviamos el costo como un diccionario simple para que Form lo reciba
+            payload = {"cost_per_trade": str(comision)} 
             
             try:
                 response = requests.post(
                     API_URL,
                     files=files,
                     headers=headers,
-                    data=payload,
+                    data=payload, # <--- Esto ahora coincide con Form en la API
                     timeout=120
                 )
 
