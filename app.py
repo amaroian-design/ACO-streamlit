@@ -188,7 +188,9 @@ with results_container:
             st.stop()
 
         with st.spinner("🛡️ Initializing secure diagnostic engine..."):
-            files = {"file": uploaded_file}
+            uploaded_file.seek(0) 
+    
+            files = {"file": ("data.csv", uploaded_file.getvalue(), "text/csv")}
             headers = {"x-api-key": API_KEY}
             data = {"cost_per_trade": comision}
             
@@ -266,20 +268,14 @@ with results_container:
             "I acknowledge this report is diagnostic-only and non-advisory."
         )
 
-        if acepto and st.button("📥 Generate PDF Report") and not st.session_state.pdf_requested:
-            st.session_state.pdf_requested = True
+        if acepto and st.button("📥 Generate PDF Report"):
             with st.spinner("Generating secure diagnostic report..."):
-                files = {
-                    "file": uploaded_file
-                }
-
-                headers = {
-                    "x-api-key": API_KEY
-                }
-
-                data = {
-                    "cost_per_trade": comision
-                }
+        # REBOBINAR ARCHIVO
+                uploaded_file.seek(0)
+        
+                files = {"file": ("data.csv", uploaded_file.getvalue(), "text/csv")}
+                headers = {"x-api-key": API_KEY}
+                data = {"cost_per_trade": comision}
 
                 response = requests.post(
                     API_URL_PDF,
@@ -324,4 +320,3 @@ st.caption("""
 
 **4. Resultados Proyectados:** Los cálculos de "Ahorro Estimado" y "Eficiencia" son proyecciones matemáticas basadas en datos históricos y no garantizan rendimientos futuros.
 """)
-
