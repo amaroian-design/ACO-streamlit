@@ -141,6 +141,7 @@ uploaded_file = st.file_uploader("Suba su archivo CSV", type=["csv"])
 
 if uploaded_file is not None and not st.session_state.archivo_cargado:
     try:
+        st.session_state.file_bytes = uploaded_file.getvalue()
         df_user = pd.read_csv(uploaded_file)
         col = [c for c in df_user.columns if "time" not in c.lower()][0]
         pesos = pd.to_numeric(df_user[col], errors="coerce").fillna(0)
@@ -188,9 +189,8 @@ with results_container:
             st.stop()
 
         with st.spinner("🛡️ Initializing secure diagnostic engine..."):
-            # Extraemos los bytes una sola vez
-            file_bytes = uploaded_file.getvalue()
-            files = {"file": ("data.csv", file_bytes, "text/csv")}
+            current_bytes = st.session_state.file_bytes 
+            files = {"file": ("data.csv", current_bytes, "text/csv")}
             headers = {"x-api-key": API_KEY}
             payload = {"cost_per_trade": comision} # Cambié 'data' por 'payload' para evitar confusiones
             
