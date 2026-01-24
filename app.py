@@ -188,40 +188,37 @@ with results_container:
             st.stop()
 
         with st.spinner("🛡️ Initializing secure diagnostic engine..."):
-            uploaded_file.seek(0) 
-    
-            files = {"file": ("data.csv", uploaded_file.getvalue(), "text/csv")}
+            # Extraemos los bytes una sola vez
+            file_bytes = uploaded_file.getvalue()
+            files = {"file": ("data.csv", file_bytes, "text/csv")}
             headers = {"x-api-key": API_KEY}
-            data = {"cost_per_trade": comision}
+            payload = {"cost_per_trade": comision} # Cambié 'data' por 'payload' para evitar confusiones
             
             try:
                 response = requests.post(
                     API_URL,
                     files=files,
                     headers=headers,
-                    data=data,
+                    data=payload,
                     timeout=120
                 )
 
+                if response.status_code == 200:
+                    result = response.json()
+                else:
+                    st.error(f"❌ API error {response.status_code}")
+                    st.stop()
+
             except requests.exceptions.ReadTimeout:
-                st.warning("""
-                ⏳ Diagnostic engine is warming up.
-
-                This happens only on the **first run**.
-                Please wait ~30–60 seconds and try again.
-                """)
+                st.warning("⏳ Diagnostic engine is warming up. Please wait ~30s and try again.")
                 st.stop()
-
             except Exception as e:
-                st.error("❌ Unexpected connection error.")
+                st.error(f"❌ Unexpected connection error: {e}")
                 st.stop()
 
-            if response.status_code != 200:
                 st.error(f"❌ API error {response.status_code}")
                 st.code(response.text)
                 st.stop()
-
-            result = response.json()
 
         if st.session_state.run_count >= 3:
             st.info("🛡️ Outputs agregados para preservar integridad diagnóstica.")
@@ -259,7 +256,7 @@ with results_container:
             st.success("✅ System-level health assessment completed.")
 
         # -----------------------------
-        # DESCARGA DE PDF (DESDE API)
+        # DESCARGA DE PDF (CORREGIDO)
         # -----------------------------
         st.markdown("---")
         st.subheader("📄 Diagnostic Report")
@@ -268,33 +265,37 @@ with results_container:
             "I acknowledge this report is diagnostic-only and non-advisory."
         )
 
-        if acepto and st.button("📥 Generate PDF Report"):
-            with st.spinner("Generating secure diagnostic report..."):
-        # REBOBINAR ARCHIVO
-                uploaded_file.seek(0)
-        
-                files = {"file": ("data.csv", uploaded_file.getvalue(), "text/csv")}
-                headers = {"x-api-key": API_KEY}
-                data = {"cost_per_trade": comision}
+        if acepto:
+            # Quitamos el 'and st.button' del condicional principal para que el botón de descarga persista
+            if st.button("📥 Generate PDF Report"):
+                with st.spinner("Generating secure diagnostic report..."):
+                    file_bytes = uploaded_file.getvalue()
+                    files = {"file": ("data.csv", file_bytes, "text/csv")}
+                    headers = {"x-api-key": API_KEY}
+                    payload = {"cost_per_trade": comision}
 
-                response = requests.post(
-                    API_URL_PDF,
-                    files=files,
-                    headers=headers,
-                    data=data,
-                    timeout=60
-                )
+                    try:
+                        response = requests.post(
+                            API_URL_PDF,
+                            files=files,
+                            headers=headers,
+                            data=payload,
+                            timeout=60
+                        )
 
-                if response.status_code != 200:
-                    st.error("❌ Error generating report.")
-                    st.stop()
-
-                st.download_button(
-                    label="📩 Download PDF Report",
-                    data=response.content,
-                    file_name="Reporte_AOC.pdf",
-                    mime="application/pdf"
-                )
+                        if response.status_code == 200:
+                            st.success("✅ Report generated!")
+                            # El botón de descarga debe estar fuera de cualquier lógica de 'limpieza'
+                            st.download_button(
+                                label="📩 Click here to Download PDF",
+                                data=response.content,
+                                file_name="Reporte_AOC.pdf",
+                                mime="application/pdf"
+                            )
+                        else:
+                            st.error(f"❌ API error {response.status_code}")
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
 
             if st.button("🗑️ Limpiar sesión"):
                 reset_session()
