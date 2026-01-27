@@ -13,8 +13,12 @@ API_URL_PDF = st.secrets["API_URL_PDF"]
 # -------------------------------------------------
 st.set_page_config(page_title="AOC Diagnostic Portal", page_icon="🛡️")
 
+# Insertar el logo en la barra lateral o en el encabezado
 with st.sidebar:
-
+    # Si tienes el archivo de imagen:
+    # st.image("logo_aoc.png", width=200) 
+    
+    # Si quieres usar un título estilizado como logo por ahora:
     st.markdown("""
         <h1 style='color: #2e7d32; text-align: center; font-family: sans-serif;'>
         🛡️ AOC <span style='color: white;'>Diagnostic</span>
@@ -135,7 +139,7 @@ with st.sidebar:
 # -------------------------------------------------
 uploaded_file = st.file_uploader("Suba su archivo CSV", type=["csv"])
 if uploaded_file is not None and not st.session_state.archivo_cargado:
-#w
+
     upload_id = uuid.uuid4().hex
     st.session_state.upload_id = upload_id
 
@@ -185,66 +189,14 @@ if ok:
     st.success("Archivo registrado para pago ✅")
 
 # -------------------------------------------------
-# BOTÓN DE EJECUCIÓN (CON LÓGICA CORREGIDA)
+# BOTÓN DE EJECUCIÓN
 # -------------------------------------------------
 if st.session_state.archivo_cargado and not st.session_state.diagnostico_listo:
-    
-    # --- DEFINIMOS EL LINK AQUÍ ---
-    LINK_DE_STRIPE = "https://buy.stripe.com/tu_enlace_aqui" # <--- Pon tu link real cuando lo tengas
+    if st.button("🚀 Generar Diagnóstico Profesional"):
+        st.session_state.run_count += 1
+        st.session_state.diagnostico_listo = True
+        st.rerun()
 
-    if st.button("Generar Diagnóstico Profesional"):
-        with st.spinner("Analizando estructura de adaptación..."):
-            
-            # --- CORRECCIÓN: Definimos files y headers antes de usarlos ---
-            files = {"file": ("data.csv", st.session_state.file_bytes, "text/csv")}
-            headers = {"x-api-key": API_KEY}
-            payload = {"cost_per_trade": str(comision)}
-
-            try:
-                # Llamada a tu endpoint /diagnose
-                response = requests.post(
-                    f"{API_URL}", # Usamos la URL base
-                    files=files, 
-                    headers=headers,
-                    data=payload,
-                    timeout=120
-                )
-        
-                if response.status_code == 200:
-                    data = response.json()
-                    st.session_state.diagnostico_listo = True # Marcamos como listo
-                    
-                    # 1. MOSTRAR RESULTADOS GRATIS (FREEMIUM)
-                    st.success("¡Análisis completado!")
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric("Activity Level", data["structural_activity"])
-                    col2.metric("System Status", data["system_status"])
-                    col3.metric("Efficiency", f"{data['efficiency_band']}%")
-                    
-                    st.divider() 
-
-                    # 2. SECCIÓN DE PAGO PARA EL PDF
-                    st.subheader("📑 Reporte de Auditoría Estructural (PDF)")
-                    st.write("Obtenga el desglose técnico completo y mapa de estabilidad.")
-                    
-                    # El botón de Stripe con formato visual
-                    st.markdown(f"""
-                    <div style="background-color:#1e1e1e;padding:20px;border-radius:10px;border:2px solid #2e7d32;text-align:center;">
-                        <h3 style="color:white;">💳 Paso Final: Pago de Auditoría</h3>
-                        <p style="color:#bbb;">Haga clic para procesar el pago de <b>$49 USD</b> vía Stripe.</p>
-                        <a href="{LINK_DE_STRIPE}" target="_blank" style="background-color:#2e7d32;color:white;padding:12px 25px;text-decoration:none;border-radius:5px;font-weight:bold;display:inline-block;margin-top:10px;">
-                            PAGAR AHORA Y DESCARGAR
-                        </a>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    st.info("💡 Tras el pago, podrá descargar su reporte.")
-                else:
-                    st.error(f"Error en la API: {response.status_code}")
-
-            except Exception as e:
-                st.error(f"Error de conexión: {e}")
-                
 # -------------------------------------------------
 # RESULTADOS (CONTENEDOR AISLADO 🔒) API
 # -------------------------------------------------
