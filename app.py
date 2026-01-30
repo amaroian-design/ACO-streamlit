@@ -66,7 +66,7 @@ st.markdown("""
 
 # -------------------------------------------------
 # FUNCIONES AUXILIARES
-# -------------------------------------------------LINK_DE_STRIPE = "https://buy.stripe.com/tu_enlace_aqui"
+# -------------------------------------------------
 def get_exposure_level():
     count = st.session_state.run_count
     if count <= 2:
@@ -412,3 +412,4 @@ st.caption("""
 
 **4. Resultados Proyectados:** Los cálculos de "Ahorro Estimado" y "Eficiencia" son proyecciones matemáticas basadas en datos históricos y no garantizan rendimientos futuros.
 """)
+
