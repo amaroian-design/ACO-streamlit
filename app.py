@@ -166,7 +166,8 @@ def upload_csv_to_backend(file_bytes, upload_id):
     }
 
     data = {
-        "upload_id": upload_id
+    "upload_id": upload_id,
+    "cost_per_trade": str(comision)
     }
 
     r = requests.post(
@@ -201,6 +202,7 @@ if st.session_state.archivo_cargado and not st.session_state.diagnostico_listo:
     
     # --- DEFINIMOS EL LINK AQUÍ ---
     pay_url = f"https://ahr-aoc-backend.onrender.com/pagar?upload_id={st.session_state.upload_id}"
+    LINK_DE_STRIPE = f"https://ahr-aoc-backend.onrender.com/pagar?upload_id={st.session_state.upload_id}"
 
     if st.button("Generar Diagnóstico Profesional"):
         with st.spinner("Analizando estructura de adaptación..."):
@@ -356,42 +358,8 @@ with results_container:
             "I acknowledge this report is diagnostic-only and non-advisory."
         )
 
-        if acepto:
-            # Quitamos el 'and st.button' del condicional principal para que el botón de descarga persista
-            if st.button("📥 Generate PDF Report"):
-                with st.spinner("Generating secure diagnostic report..."):
-                    file_bytes = uploaded_file.getvalue()
-                    files = {"file": ("data.csv", file_bytes, "text/csv")}
-                    headers = {"x-api-key": API_KEY}
-                    payload = {"cost_per_trade": comision}
-
-                    try:
-                        response = requests.post(
-                            API_URL_PDF,
-                            files=files,
-                            headers=headers,
-                            data=payload,
-                            timeout=60
-                        )
-
-                        if response.status_code == 200:
-                            st.success("✅ Report generated!")
-                            # El botón de descarga debe estar fuera de cualquier lógica de 'limpieza'
-                            st.download_button(
-                                label="📩 Click here to Download PDF",
-                                data=response.content,
-                                file_name="Reporte_AOC.pdf",
-                                mime="application/pdf"
-                            )
-                        else:
-                            st.error(f"❌ API error {response.status_code}")
-                    except Exception as e:
-                        st.error(f"❌ Error: {e}")
-
-            if st.button("🗑️ Limpiar sesión"):
-                reset_session()
-                st.rerun()
-
+        st.info("🔒 El reporte completo se desbloquea tras el pago.")
+  
 # -------------------------------------------------
 # FOOTER
 # -------------------------------------------------
@@ -412,4 +380,3 @@ st.caption("""
 
 **4. Resultados Proyectados:** Los cálculos de "Ahorro Estimado" y "Eficiencia" son proyecciones matemáticas basadas en datos históricos y no garantizan rendimientos futuros.
 """)
-
