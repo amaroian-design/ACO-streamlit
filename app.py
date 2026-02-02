@@ -129,237 +129,81 @@ with st.sidebar:
         value=15.0,
         step=1.0
     )
-
-# -------------------------------------------------
-# INPUT: CARGA DE ARCHIVO
+#--------------------------------------------------
+# 1. LOGICA DE CARGA (CORREGIDA)
 # -------------------------------------------------
 uploaded_file = st.file_uploader("Suba su archivo CSV", type=["csv"])
-if (
-    uploaded_file is not None
-    and "upload_id" not in st.session_state
-):
-    upload_id = uuid.uuid4().hex
-    st.session_state.upload_id = upload_id
-
-if uploaded_file is not None and not st.session_state.archivo_cargado:
-    try:
-        st.session_state.file_bytes = uploaded_file.getvalue()
-        df_user = pd.read_csv(uploaded_file)
-        col = [c for c in df_user.columns if "time" not in c.lower()][0]
-        pesos = pd.to_numeric(df_user[col], errors="coerce").fillna(0)
-
-        st.session_state.df_user = df_user
-        st.session_state.columna_pesos = pesos
-        st.session_state.cambios = pesos.diff().abs() > 1e-5
-        st.session_state.archivo_cargado = True
-
-        st.success(f"✅ Archivo cargado correctamente ({len(df_user)} registros).")
-
-    except Exception as e:
-        st.error(f"Error al procesar el archivo: {e}")
-        st.stop()
-
-def upload_csv_to_backend(file_bytes, upload_id):
-
-    files = {
-        "file": ("data.csv", file_bytes, "text/csv")
-    }
-
-    data = {
-    "upload_id": upload_id,
-    "cost_per_trade": str(comision)
-    }
-
-    r = requests.post(
-        "https://ahr-aoc-backend.onrender.com/upload",
-        files=files,
-        data=data,
-        timeout=60
-    )
-
-    return r.status_code == 200
-
-if (
-    st.session_state.archivo_cargado
-    and not st.session_state.csv_uploaded_backend
-):
-
-    ok = upload_csv_to_backend(
-        st.session_state.file_bytes,
-        st.session_state.upload_id
-    )
-
-    if ok:
-        st.session_state.csv_uploaded_backend = True
-        st.success("Archivo registrado para pago ✅")
-    else:
-        st.error("❌ Error enviando archivo al backend")
-
+if uploaded_file and "upload_id" not in st.session_state:
+    st.session_state.cost_per_trade = comision
+    st.session_state.upload_id = uuid.uuid4().hex
+    st.session_state.file_bytes = uploaded_file.getvalue()
+    df = pd.read_csv(uploaded_file)
+    # Guardamos la columna de pesos para el gráfico
+    col = [c for c in df.columns if "time" not in c.lower()][0]
+    st.session_state.columna_pesos = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    st.session_state.archivo_cargado = True
+    st.rerun()
 # -------------------------------------------------
-# BOTÓN DE EJECUCIÓN (CON LÓGICA CORREGIDA)
+# 2. BOTÓN DE EJECUCIÓN (SOLO SI NO HAY RESULTADOS)
 # -------------------------------------------------
 if st.session_state.archivo_cargado and not st.session_state.diagnostico_listo:
-    
-    # --- DEFINIMOS EL LINK AQUÍ ---
-    pay_url = f"https://ahr-aoc-backend.onrender.com/pagar?upload_id={st.session_state.upload_id}"
-    LINK_DE_STRIPE = f"https://ahr-aoc-backend.onrender.com/pagar?upload_id={st.session_state.upload_id}"
-
-    if st.button("Generar Diagnóstico Profesional"):
+    if st.button("🚀 Generar Diagnóstico Profesional"):
         with st.spinner("Analizando estructura de adaptación..."):
-            
-            # --- CORRECCIÓN: Definimos files y headers antes de usarlos ---
             files = {"file": ("data.csv", st.session_state.file_bytes, "text/csv")}
             headers = {"x-api-key": API_KEY}
-            payload = {"cost_per_trade": str(comision)}
+            
+            # CORRECCIÓN 1: Hardcoded Value eliminado. Ahora usa la variable 'comision' del input.
+            payload = {"cost_per_trade": str(comision)} 
 
             try:
-                # Llamada a tu endpoint /diagnose
-                response = requests.post(
-                    f"{API_URL}", # Usamos la URL base
-                    files=files, 
-                    headers=headers,
-                    data=payload,
-                    timeout=120
-                )
-        
+                response = requests.post(API_URL, files=files, headers=headers, data=payload, timeout=120)
                 if response.status_code == 200:
-                    data = response.json()
-                    st.session_state.diagnostico_listo = True # Marcamos como listo
-                    
-                    # 1. MOSTRAR RESULTADOS GRATIS (FREEMIUM)
-                    st.success("¡Análisis completado!")
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric("Activity Level", data["structural_activity"])
-                    col2.metric("System Status", data["system_status"])
-                    col3.metric("Efficiency", f"{data['efficiency_band']}%")
-                    
-                    st.divider() 
-
-                    # 2. SECCIÓN DE PAGO PARA EL PDF
-                    st.subheader("📑 Reporte de Auditoría Estructural (PDF)")
-                    st.write("Obtenga el desglose técnico completo y mapa de estabilidad.")
-                    
-                    # El botón de Stripe con formato visual
-                    st.markdown(f"""
-                    <div style="background-color:#1e1e1e;padding:20px;border-radius:10px;border:2px solid #2e7d32;text-align:center;">
-                        <h3 style="color:white;">💳 Paso Final: Pago de Auditoría</h3>
-                        <p style="color:#bbb;">Haga clic para procesar el pago de <b>$19 USD</b> vía Stripe.</p>
-                        <a href="{pay_url}" target="_blank" style="background-color:#2e7d32;color:white;padding:12px 25px;text-decoration:none;border-radius:5px;font-weight:bold;display:inline-block;margin-top:10px;">
-                            PAGAR AHORA Y DESCARGAR
-                        </a>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    st.info("💡 Tras el pago, podrá descargar su reporte.")
+                    st.session_state.result_data = response.json()
+                    st.session_state.diagnostico_listo = True
+                    st.session_state.csv_uploaded_backend = True
+                    st.rerun()
                 else:
-                    st.error(f"Error en la API: {response.status_code}")
-
+                    st.error(f"Error en API: {response.status_code}")
             except Exception as e:
                 st.error(f"Error de conexión: {e}")
-                
+
 # -------------------------------------------------
-# RESULTADOS (CONTENEDOR AISLADO 🔒) API
+# 3. RESULTADOS Y PAGO (PERSISTENTE)
 # -------------------------------------------------
-results_container = st.container()
+if st.session_state.diagnostico_listo:
+    res = st.session_state.result_data
+    
+    st.success("✅ Análisis estructural completado")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Activity Level", res["structural_activity"])
+    c2.metric("System Status", res["system_status"])
+    c3.metric("Efficiency", f"{res['efficiency_band']}%")
+    
+    st.line_chart(st.session_state.columna_pesos)
 
-with results_container:
-    if st.session_state.diagnostico_listo:
-        pesos = st.session_state.columna_pesos
-        level = get_exposure_level()
+    st.markdown("---")
+    
+    # CORRECCIÓN 2: Checkbox Cosmético -> Checkbox Funcional
+    st.subheader("📄 Reporte de Auditoría")
+    acepto = st.checkbox("Acepto que este reporte es un diagnóstico matemático y no una recomendación de inversión.")
+    
+    if acepto:
+        # El bloque de pago SOLO se renderiza si el checkbox es True
+        pay_url = f"https://ahr-aoc-backend.onrender.com/pagar?upload_id={st.session_state.upload_id}"
+        
+        st.markdown(f"""
+        <div style="background-color:#1e1e1e;padding:25px;border-radius:10px;border:2px solid #2e7d32;text-align:center;margin-top:15px;">
+            <h3 style="color:white;margin-bottom:5px;">🛡️ Desbloquear Auditoría Completa</h3>
+            <p style="color:#bbb;margin-bottom:20px;">Obtenga el PDF con el mapa de estabilidad y recomendaciones de eficiencia.</p>
+            <a href="{pay_url}" target="_blank" style="background-color:#2e7d32;color:white;padding:12px 30px;text-decoration:none;border-radius:5px;font-weight:bold;display:inline-block;transition: 0.3s;">
+                PAGAR Y DESCARGAR REPORTE
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.info("💡 Por favor, acepte los términos arriba para habilitar la descarga del reporte completo.")
 
-        try:
-            requests.get("https://aoc-diagnostic-api.onrender.com", timeout=90)
-            time.sleep(1)
-        except:
-            pass
-        # -----------------------------
-        # LLAMADA A LA API
-        # -----------------------------
-        if st.session_state.run_count > 5:
-            st.warning("Usage limit reached for this session.")
-            st.stop()
-
-        with st.spinner("🛡️ Initializing secure diagnostic engine..."):
-            # Usamos los bytes guardados en el estado
-            files = {"file": ("data.csv", st.session_state.file_bytes, "text/csv")}
-            headers = {"x-api-key": API_KEY}
-            
-            # Enviamos el costo como un diccionario simple para que Form lo reciba
-            payload = {"cost_per_trade": str(comision)} 
-            
-            try:
-                response = requests.post(
-                    API_URL,
-                    files=files,
-                    headers=headers,
-                    data=payload, # <--- Esto ahora coincide con Form en la API
-                    timeout=120
-                )
-
-                if response.status_code == 200:
-                    result = response.json()
-                else:
-                    st.error(f"❌ API error {response.status_code}")
-                    st.stop()
-
-            except requests.exceptions.ReadTimeout:
-                st.warning("⏳ Diagnostic engine is warming up. Please wait ~30s and try again.")
-                st.stop()
-            except Exception as e:
-                st.error(f"❌ Unexpected connection error: {e}")
-                st.stop()
-
-                st.error(f"❌ API error {response.status_code}")
-                st.code(response.text)
-                st.stop()
-
-        if st.session_state.run_count >= 3:
-            st.info("🛡️ Outputs agregados para preservar integridad diagnóstica.")
-
-        # -----------------------------
-        # RESULTADOS
-        # -----------------------------
-        st.subheader("🔍 Structural Activity Overview")
-
-        st.metric(
-            "Structural Activity Level",
-            result["structural_activity"]
-        )
-
-        st.metric(
-            "System Status",
-            result["system_status"]
-        )
-
-        st.metric(
-            "Efficiency Band",
-            f"{result['efficiency_band']}%"
-        )
-
-        st.caption(result["diagnostic_scope"])
-
-        # -----------------------------
-        # VISUALIZACIÓN CONTROLADA
-        # -----------------------------
-        if level == "full":
-            st.line_chart(pesos.rename("Decision Trajectory"))
-        elif level == "reduced":
-            st.info("Visual trajectory omitted (aggregated mode).")
-        else:
-            st.success("✅ System-level health assessment completed.")
-
-        # -----------------------------
-        # DESCARGA DE PDF (CORREGIDO)
-        # -----------------------------
-        st.markdown("---")
-        st.subheader("📄 Diagnostic Report")
-
-        acepto = st.checkbox(
-            "I acknowledge this report is diagnostic-only and non-advisory."
-        )
-
-        st.info("🔒 El reporte completo se desbloquea tras el pago.")
-  
+# ... (Footer y Términos y Condiciones igual)
 # -------------------------------------------------
 # FOOTER
 # -------------------------------------------------
