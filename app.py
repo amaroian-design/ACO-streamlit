@@ -153,8 +153,10 @@ if st.session_state.archivo_cargado and not st.session_state.diagnostico_listo:
             headers = {"x-api-key": API_KEY}
             
             # CORRECCIÓN 1: Hardcoded Value eliminado. Ahora usa la variable 'comision' del input.
-            payload = {"cost_per_trade": str(comision)} 
-
+            payload = {
+                "cost_per_trade": str(comision),
+                "upload_id": st.session_state.upload_id  # <--- ESTA LÍNEA FALTA
+            }
             try:
                 response = requests.post(API_URL, files=files, headers=headers, data=payload, timeout=120)
                 if response.status_code == 200:
@@ -224,3 +226,4 @@ st.caption("""
 
 **4. Resultados Proyectados:** Los cálculos de "Ahorro Estimado" y "Eficiencia" son proyecciones matemáticas basadas en datos históricos y no garantizan rendimientos futuros.
 """)
+
