@@ -159,6 +159,10 @@ if st.session_state.archivo_cargado and not st.session_state.diagnostico_listo:
             }
             try:
                 response = requests.post(API_URL, files=files, headers=headers, data=payload, timeout=120)
+
+                st.write(f"Código de respuesta del servidor: {response.status_code}")
+                st.write(f"Contenido: {response.text}")
+                
                 if response.status_code == 200:
                     st.session_state.result_data = response.json()
                     st.session_state.diagnostico_listo = True
@@ -226,4 +230,3 @@ st.caption("""
 
 **4. Resultados Proyectados:** Los cálculos de "Ahorro Estimado" y "Eficiencia" son proyecciones matemáticas basadas en datos históricos y no garantizan rendimientos futuros.
 """)
-
