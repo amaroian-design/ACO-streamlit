@@ -174,7 +174,7 @@ if st.session_state.archivo_cargado and not st.session_state.diagnostico_listo:
                 st.error(f"Error de conexión: {e}")
 
 # -------------------------------------------------
-# 3. RESULTADOS Y PAGO (PERSISTENTE)
+# 3. RESULTADOS Y PAGO (CON LOGICA DE REGISTRO OBLIGATORIO)
 # -------------------------------------------------
 if st.session_state.diagnostico_listo:
     res = st.session_state.result_data
@@ -188,28 +188,65 @@ if st.session_state.diagnostico_listo:
     st.line_chart(st.session_state.columna_pesos)
 
     st.markdown("---")
-    
-    # CORRECCIÓN 2: Checkbox Cosmético -> Checkbox Funcional
     st.subheader("📄 Reporte de Auditoría")
-    acepto = st.checkbox("Acepto que este reporte es un diagnóstico matemático y no una recomendación de inversión.")
     
-    if acepto:
-        # Cambia esto en el app.py de Streamlit (alrededor de la línea 133)
-        pay_url = f"https://ahr-aoc-backend.onrender.com/api/create-checkout?upload_id={st.session_state.upload_id}"
-        
-        st.markdown(f"""
-        <div style="background-color:#1e1e1e;padding:25px;border-radius:10px;border:2px solid #2e7d32;text-align:center;margin-top:15px;">
-            <h3 style="color:white;margin-bottom:5px;">🛡️ Desbloquear Auditoría Completa</h3>
-            <p style="color:#bbb;margin-bottom:20px;">Obtenga el PDF con el mapa de estabilidad y recomendaciones de eficiencia.</p>
-            <a href="{pay_url}" target="_blank" style="background-color:#2e7d32;color:white;padding:12px 30px;text-decoration:none;border-radius:5px;font-weight:bold;display:inline-block;transition: 0.3s;">
-                PAGAR Y DESCARGAR REPORTE
-            </a>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.info("💡 Por favor, acepte los términos arriba para habilitar la descarga del reporte completo.")
+    # PASO 1: Aceptar términos
+    acepto = st.checkbox("Acepto que este reporte es un diagnóstico matemático.")
 
-# ... (Footer y Términos y Condiciones igual)
+    if acepto:
+        # PASO 2: Verificar si el usuario está logueado
+        if "jwt" not in st.session_state:
+            st.warning("👋 ¡Casi listo! Para procesar tu pago y enviarte el PDF, por favor inicia sesión o regístrate.")
+            
+            tab1, tab2 = st.tabs(["Iniciar Sesión", "Crear Cuenta"])
+            
+            with tab1:
+                email_l = st.text_input("Email", key="login_email")
+                pass_l = st.text_input("Password", type="password", key="login_pass")
+                if st.button("Entrar y Continuar"):
+                    # Llamada a tu API de login
+                    r = requests.post(f"{API_URL.replace('/upload','')}/auth/login", 
+                                     json={"email": email_l.lower(), "password": pass_l})
+                    if r.status_code == 200:
+                        st.session_state.jwt = r.json()["token"]
+                        st.rerun()
+                    else:
+                        st.error("Credenciales incorrectas")
+
+            with tab2:
+                email_r = st.text_input("Nuevo Email", key="reg_email")
+                pass_r = st.text_input("Nueva Contraseña", type="password", key="reg_pass")
+                if st.button("Registrarse y Continuar"):
+                    r = requests.post(f"{API_URL.replace('/upload','')}/auth/register", 
+                                     json={"email": email_r.lower(), "password": pass_r})
+                    if r.status_code == 201:
+                        st.session_state.jwt = r.json()["token"]
+                        st.success("¡Cuenta creada!")
+                        st.rerun()
+                    else:
+                        st.error("Error al crear cuenta (quizás ya existe)")
+        
+        else:
+            # PASO 3: Usuario ya está logueado, mostramos botón de pago
+            pay_url = f"https://ahr-aoc-backend.onrender.com/api/create-checkout?upload_id={st.session_state.upload_id}"
+            
+            # Obtenemos el email del estado o de una variable segura
+            display_email = st.session_state.get('login_email', 'Usuario Autenticado')
+
+            st.markdown(f"""
+            <div style="background-color:#1e1e1e;padding:25px;border-radius:10px;border:2px solid #2e7d32;text-align:center;">
+                <h3 style="color:white;margin-bottom:10px;">🛡️ Auditoría Completa Lista</h3>
+                <p style="color:#22c55e; font-weight:bold; margin-bottom:20px;">Sesión activa: {display_email}</p>
+                <a href="{pay_url}" target="_blank" style="background-color:#2e7d32;color:white;padding:14px 40px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;box-shadow: 0 4px 15px rgba(46,125,50,0.3);">
+                    PAGAR Y DESCARGAR REPORTE 💳
+                </a>
+            </div>
+            """, unsafe_allow_html=True)
+            st.balloons()
+            st.info("💡 Haz clic en el botón de arriba. Se abrirá la pasarela segura de Stripe en una nueva pestaña.")
+    else:
+        st.info("💡 Por favor, acepte los términos arriba para habilitar la descarga.")
+        
 # -------------------------------------------------
 # FOOTER
 # -------------------------------------------------
@@ -230,4 +267,3 @@ st.caption("""
 
 **4. Resultados Proyectados:** Los cálculos de "Ahorro Estimado" y "Eficiencia" son proyecciones matemáticas basadas en datos históricos y no garantizan rendimientos futuros.
 """)
-
