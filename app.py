@@ -194,8 +194,8 @@ if st.session_state.diagnostico_listo:
     acepto = st.checkbox("Acepto que este reporte es un diagnóstico matemático y no una recomendación de inversión.")
     
     if acepto:
-        # El bloque de pago SOLO se renderiza si el checkbox es True
-        pay_url = f"https://ahr-aoc-backend.onrender.com/pagar?upload_id={st.session_state.upload_id}"
+        # Cambia esto en el app.py de Streamlit (alrededor de la línea 133)
+        pay_url = f"https://ahr-aoc-backend.onrender.com/api/create-checkout?upload_id={st.session_state.upload_id}"
         
         st.markdown(f"""
         <div style="background-color:#1e1e1e;padding:25px;border-radius:10px;border:2px solid #2e7d32;text-align:center;margin-top:15px;">
@@ -230,3 +230,4 @@ st.caption("""
 
 **4. Resultados Proyectados:** Los cálculos de "Ahorro Estimado" y "Eficiencia" son proyecciones matemáticas basadas en datos históricos y no garantizan rendimientos futuros.
 """)
+
