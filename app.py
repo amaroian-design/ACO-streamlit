@@ -227,8 +227,9 @@ if st.session_state.diagnostico_listo:
                         st.error("Error al crear cuenta (quizás ya existe)")
         
         else:
-            # PASO 3: Usuario ya está logueado, mostramos botón de pago
-            pay_url = f"https://ahr-aoc-backend.onrender.com/api/create-checkout?upload_id={st.session_state.upload_id}"
+            # En Streamlit (app.py)
+            user_email_param = st.session_state.get('reg_email', st.session_state.get('login_email', ''))
+            pay_url = f"https://ahr-aoc-backend.onrender.com/api/create-checkout?upload_id={st.session_state.upload_id}&email={user_email_param}"
             
             # Obtenemos el email del estado o de una variable segura
             display_email = st.session_state.get('login_email', 'Usuario Autenticado')
