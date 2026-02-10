@@ -106,7 +106,7 @@ elif menu == "📂 Mis Reportes":
                 for rep in reports:
                     col1, col2 = st.columns([3, 1])
                     col1.markdown(f"🗓️ **Fecha:** {rep['created_at']}  \n💰 **Inversión:** ${rep['amount']} USD")
-                    
+                    st.write(f"DEBUG - URL de descarga: {rep['url']}") # Borra esto después de probar
                     if rep['url']: 
                         col2.link_button("📄 Descargar", rep['url'], help="Haz clic para descargar tu auditoría")
                     st.divider()
