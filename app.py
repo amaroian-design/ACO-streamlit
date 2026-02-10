@@ -102,12 +102,14 @@ elif menu == "📂 Mis Reportes":
             if r.status_code == 200:
                 reports = r.json()
                 if not reports: st.info("Aún no tienes reportes comprados.")
+                # Busca esta parte en tu código y asegúrate de que use link_button correctamente
                 for rep in reports:
-                    with st.container():
-                        col1, col2 = st.columns([3, 1])
-                        col1.markdown(f"🗓️ **Fecha:** {rep['created_at']}  \n💰 **Inversión:** ${rep['amount']} USD")
-                        if rep['url']: col2.link_button("📄 Descargar PDF", rep['url'])
-                        st.divider()
+                    col1, col2 = st.columns([3, 1])
+                    col1.markdown(f"🗓️ **Fecha:** {rep['created_at']}  \n💰 **Inversión:** ${rep['amount']} USD")
+                    
+                    if rep['url']: 
+                        col2.link_button("📄 Descargar", rep['url'], help="Haz clic para descargar tu auditoría")
+                    st.divider()
             else: st.error("Error al obtener reportes.")
         except: st.error("Error de conexión con el servidor.")
 
@@ -165,7 +167,9 @@ elif menu == "🚀 Nuevo Diagnóstico":
             if not st.session_state.jwt:
                 st.warning("👋 ¡Casi listo! Inicia sesión en el menú lateral para procesar tu pago y recibir el PDF.")
             else:
-                pay_url = f"https://ahr-aoc-backend.onrender.com/api/create-checkout?upload_id={st.session_state.upload_id}"
+                # Obtenemos el email del input de login o registro
+                user_email = st.session_state.get('l_email') or st.session_state.get('r_email') or "cliente@desconocido.com"
+                pay_url = f"https://ahr-aoc-backend.onrender.com/api/create-checkout?upload_id={st.session_state.upload_id}&email={user_email}"
                 st.markdown(f"""
                 <div style="background-color:#1e1e1e;padding:25px;border-radius:10px;border:2px solid #2e7d32;text-align:center;">
                     <h3 style="color:white;margin-bottom:10px;">🛡️ Auditoría Completa Lista</h3>
