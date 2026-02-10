@@ -131,7 +131,7 @@ elif menu == "🚀 Nuevo Diagnóstico":
         st.session_state.archivo_cargado = True
         st.rerun()
 
-    # 2. BOTÓN DE EJECUCIÓN
+    # 2. BOTÓN DE EJECUCIÓN 
     if st.session_state.archivo_cargado and not st.session_state.diagnostico_listo:
         if st.button("🚀 Generar Diagnóstico Profesional"):
             with st.spinner("Analizando estructura de adaptación..."):
@@ -167,9 +167,8 @@ elif menu == "🚀 Nuevo Diagnóstico":
             if not st.session_state.jwt:
                 st.warning("👋 ¡Casi listo! Inicia sesión en el menú lateral para procesar tu pago y recibir el PDF.")
             else:
-                # Obtenemos el email del input de login o registro
-                user_email = st.session_state.get('l_email') or st.session_state.get('r_email') or "cliente@desconocido.com"
-                pay_url = f"https://ahr-aoc-backend.onrender.com/api/create-checkout?upload_id={st.session_state.upload_id}&email={user_email}"
+                email_para_stripe = st.session_state.get('l_email') or st.session_state.get('r_email')
+                pay_url = f"https://ahr-aoc-backend.onrender.com/api/create-checkout?upload_id={st.session_state.upload_id}&email={email_para_stripe}"
                 st.markdown(f"""
                 <div style="background-color:#1e1e1e;padding:25px;border-radius:10px;border:2px solid #2e7d32;text-align:center;">
                     <h3 style="color:white;margin-bottom:10px;">🛡️ Auditoría Completa Lista</h3>
