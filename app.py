@@ -106,7 +106,6 @@ elif menu == "📂 Mis Reportes":
                 for rep in reports:
                     col1, col2 = st.columns([3, 1])
                     col1.markdown(f"🗓️ **Fecha:** {rep['created_at']}  \n💰 **Inversión:** ${rep['amount']} USD")
-                    st.write(f"DEBUG - URL de descarga: {rep['url']}") # Borra esto después de probar
                     if rep['url']: 
                         col2.link_button("📄 Descargar", rep['url'], help="Haz clic para descargar tu auditoría")
                     st.divider()
@@ -192,3 +191,4 @@ with st.expander("⚖️ Términos y Condiciones de Uso"):
     **3. Privacidad:** Los CSV se procesan en memoria y no se almacenan permanentemente sin pago.
     **4. Proyecciones:** Los cálculos son proyecciones basadas en datos históricos.
     """)
+
